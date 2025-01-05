@@ -1,0 +1,60 @@
+name: test_dota_api_app
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.5.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http:
+  shared_preferences:
+  smooth_page_indicator:
+  url_launcher:
+  control_style: ^0.1.0
+  flutter_inset_box_shadow: ^1.0.8
+  curved_navigation_bar: ^1.0.6
+  icons_launcher:
+  html:
+  carousel_slider:
+  html_unescape:
+  graphql:
+  cached_network_image:
+  rxdart:
+  animated_icon:
+  fl_chart:
+  intl:
+  flutter_svg:
+  font_awesome_flutter:
+  webview_flutter:
+  webview_flutter_android:
+  webview_flutter_wkwebview:
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - lib/icons/
+    - lib/images/
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: lib/fonts/Inter.ttf
+
+icons_launcher:
+  image_path: "lib/images/D2TAppLogo.png"
+  platforms:
+    android:
+      enable: true
+      adaptive_foreground_image: "lib/images/D2TAppLogo.png"  # Use the full logo as the foreground
+      adaptive_background_color: '#ffffff'
+    ios:
+      enable: true
