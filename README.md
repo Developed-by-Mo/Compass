@@ -1,5 +1,7 @@
 ![Dota2TrackerReleaseBanner](https://github.com/user-attachments/assets/fc8a0c13-8954-422c-9556-959c04c2da99)
 
+[![Get it on Google Play](https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg)](https://play.google.com/store/apps/details?id=com.developedbymo.dota2tracker)
+
 # Dota 2 Tracker
 ![Static Badge](https://img.shields.io/badge/dart-grey?style=for-the-badge&logo=dart&logoColor=skyblue)
 ![Static Badge](https://img.shields.io/badge/Flutter-grey?style=for-the-badge&logo=flutter&logoColor=skyblue)
