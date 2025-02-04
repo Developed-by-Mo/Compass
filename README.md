@@ -40,7 +40,7 @@ To build the app, follow these steps:
 ```
 
 ## 🤝 Contributing
-Contributions to the Dota 2 Tracker app are welcomed. If you would like to contribute to the development or report issues, please follow these guidelines:
+Contributions to the Dota 2 Tracker app are welcomed. If you would like to contribute to the development, please follow these guidelines:
 
 1. Fork the repository.
 
