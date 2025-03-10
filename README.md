@@ -1,12 +1,12 @@
-![Dota2TrackerReleaseBanner](https://github.com/user-attachments/assets/fc8a0c13-8954-422c-9556-959c04c2da99)
+![CompassFeatureGraphic](https://github.com/user-attachments/assets/ef8d1cb6-b292-4891-a141-bce3760d771a)
 
 [![Get it on Google Play](https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg)](https://play.google.com/store/apps/details?id=com.developedbymo.dota2tracker)
 
-# Dota 2 Tracker
+# Compass for Dota 2
 ![Static Badge](https://img.shields.io/badge/dart-grey?style=for-the-badge&logo=dart&logoColor=skyblue)
 ![Static Badge](https://img.shields.io/badge/Flutter-grey?style=for-the-badge&logo=flutter&logoColor=skyblue)
 ## 🎯 Empowering Your Dota 2 Journey with Precision and Insight
-Dota 2 Tracker is a comprehensive mobile application designed to enhance the experience of Dota 2 players by providing in-depth statistics (retrieved using the [STRATZ](https://stratz.com/) and [OpenDota](https://www.opendota.com/) APIs) and real-time news updates. The app empowers players to track their performance, analyze game trends, and stay informed about the latest Dota 2 news and patches. With a user-friendly interface and advanced features, it enables players to improve their gameplay through personalized insights and detailed match data. By integrating a sleek, intuitive design, Dota 2 Tracker stands out from its competitors, offering a solution that caters specifically to the needs of competitive gamers. This application is developed with a focus on continuous engagement, creating a valuable resource for both casual players and professional eSports enthusiasts alike.
+Compass is a comprehensive mobile application designed to enhance the experience of Dota 2 players by providing in-depth statistics (retrieved using the [STRATZ](https://stratz.com/) and [OpenDota](https://www.opendota.com/) APIs) and real-time news updates. The app empowers players to track their performance, analyze game trends, and stay informed about the latest Dota 2 news and patches. With a user-friendly interface and advanced features, it enables players to improve their gameplay through personalized insights and detailed match data. By integrating a sleek, intuitive design, Compass for Dota 2 stands out from its competitors, offering a solution that caters specifically to the needs of competitive gamers. This application is developed with a focus on continuous engagement, creating a valuable resource for both casual players and professional eSports enthusiasts alike.
 
 ## ✨ Features
 ### 📊 View Player Statistics and Match History
@@ -40,7 +40,7 @@ To build the app, follow these steps:
 ```
 
 ## 🤝 Contributing
-Contributions to the Dota 2 Tracker app are welcomed. If you would like to contribute to the development, please follow these guidelines:
+Contributions to the Compass for Dota 2 app are welcomed. If you would like to contribute to the development, please follow these guidelines:
 
 1. Fork the repository.
 
