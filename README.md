@@ -17,10 +17,10 @@ Compass is a comprehensive mobile application designed to enhance the experience
 - Discover detailed statistics for each hero, including win rates, pick rates, and ban rates across different ranks and patches.
   
 ## 🖼️ Screenshots
-![D2TGPSSC1](https://github.com/user-attachments/assets/1830c798-6a90-4140-bf74-b80c3c6add41)
-![D2TGPSSC2](https://github.com/user-attachments/assets/a32cd1a8-f43f-4506-99ea-a864a8ebef2c)
-![D2TGPSSC3](https://github.com/user-attachments/assets/ca3655af-e206-4ee2-a776-abc2c540b81a)
-![D2TGPSSC4](https://github.com/user-attachments/assets/64178e63-6000-470b-be6c-dc9e32ee3fe8)
+![Compass SC1](https://github.com/user-attachments/assets/e76dc04e-d966-40dd-babc-0605d0e54f12)
+![Compass SC2](https://github.com/user-attachments/assets/a32cd1a8-f43f-4506-99ea-a864a8ebef2c)
+![Compass SC3](https://github.com/user-attachments/assets/ca3655af-e206-4ee2-a776-abc2c540b81a)
+![Compass SC4](https://github.com/user-attachments/assets/64178e63-6000-470b-be6c-dc9e32ee3fe8)
 
 ## 📝 How to Build
 To build the app, follow these steps:
