@@ -52,24 +52,24 @@ Contributions to the Compass for Dota 2 app are welcomed. If you would like to c
 5. Submit a pull request to the main repository.
 
 ## Dependencies used
-- http:
-- shared_preferences:
-- smooth_page_indicator:
-- url_launcher:
-- control_style:
-- flutter_inset_box_shadow:
-- curved_navigation_bar:
-- appinio_animated_toggle_tab:
-- icons_launcher:
-- html:
-- carousel_slider:
-- html_unescape:
-- graphql:
-- cached_network_image:
-- rxdart:
-- animated_icon:
-- fl_chart:
-- intl:
+– carousel_slider
+– control_style
+– curved_navigation_bar
+– fl_chart
+– flutter
+– flutter_svg
+– font_awesome_flutter
+– graphql
+– html
+– html_unescape
+– http
+– shared_preferences
+– url_launcher
+– webview_flutter
+– flutter_test
+– flutter_lints
+– flutter_launcher_icons
+– flutter_native_splash
 
 ## Support
 If you find this project useful, please consider giving it a star on [GitHub](https://github.com/Developed-by-Mo/Compass). Your support is greatly appreciated!
