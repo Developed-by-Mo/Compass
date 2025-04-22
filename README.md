@@ -1,4 +1,4 @@
-![CompassFeatureGraphic](https://github.com/user-attachments/assets/ef8d1cb6-b292-4891-a141-bce3760d771a)
+![CompassFeatureGraphic](https://github.com/user-attachments/assets/835f9767-7134-4a44-8240-a9925a5196bc)
 
 # Compass for Dota 2
 ![Static Badge](https://img.shields.io/badge/dart-grey?style=for-the-badge&logo=dart&logoColor=skyblue)
