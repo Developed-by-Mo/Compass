@@ -71,9 +71,9 @@ Contributions to the Compass for Dota 2 app are welcomed. If you would like to c
 - intl:
 
 ## Support
-If you find this project useful, please consider giving it a star on [GitHub](https://github.com/Developed-by-Mo/Dota-2-Tracker). Your support is greatly appreciated!
+If you find this project useful, please consider giving it a star on [GitHub](https://github.com/Developed-by-Mo/Compass). Your support is greatly appreciated!
 
 <a href="https://buymeacoffee.com/developedbymo" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="32" width="140"></a>
 
 ## License
-- [MIT License](https://github.com/Developed-By-Mo/Dota-2-Tracker/blob/main/LICENSE)
+- [MIT License](https://github.com/Developed-By-Mo/Compass/blob/main/LICENSE)
