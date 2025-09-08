@@ -3,7 +3,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+// import 'package:http/http.dart' as http;
+import 'package:compass/utils/http_client.dart';
 import 'dart:convert';
 
 import 'package:compass/pages/player_details_page.dart';
@@ -51,11 +52,10 @@ class _SearchPageState extends State<SearchPage> {
       });
 
       try {
-        final response = await http.get(
-          Uri.parse('https://api.opendota.com/api/search?q=${Uri.encodeComponent(query)}'),
-        ).timeout(
-          const Duration(seconds: 10),
-          onTimeout: () => throw TimeoutException('Search request timed out'),
+        final response = await ApiClient.getOpenDota(
+          'search',
+          query: {'q': query},
+          timeout: const Duration(seconds: 10),
         );
 
         if (response.statusCode == 200) {
@@ -65,11 +65,17 @@ class _SearchPageState extends State<SearchPage> {
           if (mounted && query == _currentQuery) {
             setState(() {
               // Convert to our custom PlayerSearchResult class
-              _searchResults = data.map((playerData) => PlayerSearchResult(
-                playerName: playerData['personaname'] ?? 'Unknown',
-                accountId: playerData['account_id']?.toString() ?? 'N/A',
-                initialAvatarUrl: playerData['avatar'] ?? '',
-              )).toList();
+              _searchResults =
+                  data
+                      .map(
+                        (playerData) => PlayerSearchResult(
+                          playerName: playerData['personaname'] ?? 'Unknown',
+                          accountId:
+                              playerData['account_id']?.toString() ?? 'N/A',
+                          initialAvatarUrl: playerData['avatar'] ?? '',
+                        ),
+                      )
+                      .toList();
               _isLoading = false;
             });
           }
@@ -103,9 +109,10 @@ class _SearchPageState extends State<SearchPage> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode
-          ? const Color.fromARGB(255, 10, 10, 10) // Slightly lighter black
-          : Colors.white,
+      backgroundColor:
+          isDarkMode
+              ? const Color.fromARGB(255, 10, 10, 10) // Slightly lighter black
+              : Colors.white,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -120,7 +127,10 @@ class _SearchPageState extends State<SearchPage> {
                       Icon(
                         Icons.person_search,
                         size: 22,
-                        color: isDarkMode ? Colors.white : const Color.fromARGB(255, 66, 66, 66),
+                        color:
+                            isDarkMode
+                                ? Colors.white
+                                : const Color.fromARGB(255, 66, 66, 66),
                       ),
                       const SizedBox(width: 10),
                       Text(
@@ -129,13 +139,16 @@ class _SearchPageState extends State<SearchPage> {
                           fontFamily: "Inter",
                           fontSize: 22.0,
                           fontWeight: FontWeight.w600,
-                          color: isDarkMode ? Colors.white : const Color.fromARGB(255, 66, 66, 66),
+                          color:
+                              isDarkMode
+                                  ? Colors.white
+                                  : const Color.fromARGB(255, 66, 66, 66),
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 13,),
+                SizedBox(height: 13),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: Container(
@@ -150,21 +163,27 @@ class _SearchPageState extends State<SearchPage> {
                         color: isDarkMode ? Colors.white : Colors.black,
                         fontFamily: "Inter",
                       ),
-                      cursorColor: isDarkMode ? Colors.white : Colors.black, // Set cursor color
+                      cursorColor:
+                          isDarkMode
+                              ? Colors.white
+                              : Colors.black, // Set cursor color
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
                         hintText: 'Search players...',
                         hintStyle: TextStyle(
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                            fontFamily: "Inter"
+                          color:
+                              isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                          fontFamily: "Inter",
                         ),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 15.0),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 15.0,
+                        ),
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: 10,),
+                SizedBox(height: 10),
                 if (_isLoading)
                   Padding(
                     padding: const EdgeInsets.all(32.0),
@@ -185,7 +204,10 @@ class _SearchPageState extends State<SearchPage> {
                   Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.red.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
@@ -212,7 +234,9 @@ class _SearchPageState extends State<SearchPage> {
             ),
           ),
           // New condition to show initial search prompt
-          if (_searchResults.isEmpty && !_isLoading && _searchController.text.isEmpty)
+          if (_searchResults.isEmpty &&
+              !_isLoading &&
+              _searchController.text.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
               child: Center(
@@ -236,14 +260,19 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                     const SizedBox(height: 8),
                     Padding(
-                      padding: const EdgeInsets.only(right: 40.0, left: 40, bottom: 210),
+                      padding: const EdgeInsets.only(
+                        right: 40.0,
+                        left: 40,
+                        bottom: 210,
+                      ),
                       child: Text(
                         "Search by player name or account ID to explore Dota 2 profiles and match history",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: "Inter",
                           fontSize: 14,
-                          color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
+                          color:
+                              isDarkMode ? Colors.grey[500] : Colors.grey[600],
                         ),
                       ),
                     ),
@@ -252,20 +281,19 @@ class _SearchPageState extends State<SearchPage> {
               ),
             ),
           SliverList(
-            delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                final player = _searchResults[index];
-                return PlayerCard(
-                  key: ValueKey(player.accountId), // Add a unique key
-                  playerName: player.playerName,
-                  accountId: player.accountId,
-                  initialAvatarUrl: player.initialAvatarUrl,
-                );
-              },
-              childCount: _searchResults.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final player = _searchResults[index];
+              return PlayerCard(
+                key: ValueKey(player.accountId), // Add a unique key
+                playerName: player.playerName,
+                accountId: player.accountId,
+                initialAvatarUrl: player.initialAvatarUrl,
+              );
+            }, childCount: _searchResults.length),
           ),
-          if (_searchResults.isEmpty && !_isLoading && _searchController.text.isNotEmpty)
+          if (_searchResults.isEmpty &&
+              !_isLoading &&
+              _searchController.text.isNotEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
               child: Center(
@@ -285,7 +313,8 @@ class _SearchPageState extends State<SearchPage> {
                         style: TextStyle(
                           fontFamily: "Inter",
                           fontSize: 20,
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                          color:
+                              isDarkMode ? Colors.grey[400] : Colors.grey[700],
                         ),
                       ),
                     ),
@@ -355,11 +384,9 @@ class _PlayerCardState extends State<PlayerCard> {
   // Modify the _fetchPlayerDetails method to handle potential race conditions
   Future<void> _fetchPlayerDetails() async {
     try {
-      final response = await http.get(
-        Uri.parse('https://api.opendota.com/api/players/${widget.accountId}'),
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => throw TimeoutException('Player details request timed out'),
+      final response = await ApiClient.getOpenDota(
+        'players/${widget.accountId}',
+        timeout: const Duration(seconds: 5),
       );
 
       if (response.statusCode == 200) {
@@ -368,7 +395,8 @@ class _PlayerCardState extends State<PlayerCard> {
         // Only update if the widget is still mounted
         if (mounted) {
           setState(() {
-            _avatarUrl = data['profile']?['avatarfull'] ?? widget.initialAvatarUrl;
+            _avatarUrl =
+                data['profile']?['avatarfull'] ?? widget.initialAvatarUrl;
             _isLoading = false;
           });
         }
@@ -403,11 +431,12 @@ class _PlayerCardState extends State<PlayerCard> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PlayerDetailsPage(
-                  playerName: widget.playerName,
-                  accountId: widget.accountId,
-                  avatarUrl: _avatarUrl ?? '',
-                ),
+                builder:
+                    (context) => PlayerDetailsPage(
+                      playerName: widget.playerName,
+                      accountId: widget.accountId,
+                      avatarUrl: _avatarUrl ?? '',
+                    ),
               ),
             );
           },
@@ -427,9 +456,10 @@ class _PlayerCardState extends State<PlayerCard> {
               contentPadding: const EdgeInsets.all(12),
               leading: ClipRRect(
                 borderRadius: BorderRadius.circular(25),
-                child: _isLoading
-                    ? _buildLoadingAvatar(isDarkMode)
-                    : _buildAvatar(isDarkMode),
+                child:
+                    _isLoading
+                        ? _buildLoadingAvatar(isDarkMode)
+                        : _buildAvatar(isDarkMode),
               ),
               title: Text(
                 widget.playerName,
@@ -483,16 +513,17 @@ class _PlayerCardState extends State<PlayerCard> {
   Widget _buildAvatar(bool isDarkMode) {
     return _avatarUrl != null && _avatarUrl!.isNotEmpty
         ? Image.network(
-      _avatarUrl!,
-      width: 50,
-      height: 50,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(isDarkMode),
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return _buildLoadingAvatar(isDarkMode);
-      },
-    )
+          _avatarUrl!,
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          errorBuilder:
+              (context, error, stackTrace) => _buildDefaultAvatar(isDarkMode),
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return _buildLoadingAvatar(isDarkMode);
+          },
+        )
         : _buildDefaultAvatar(isDarkMode);
   }
 

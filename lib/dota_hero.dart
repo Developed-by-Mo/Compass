@@ -54,13 +54,17 @@ class DotaHero {
 
   // Map of exceptions for custom URLs
   static final Map<String, String> urlExceptions = {
-    'dawnbreaker': 'https://cdn.akamai.steamstatic.com/apps/dota2/images/dota_react/heroes/dawnbreaker.png',
+    'dawnbreaker':
+        'https://cdn.akamai.steamstatic.com/apps/dota2/images/dota_react/heroes/dawnbreaker.png',
     // Add more custom URLs here
   };
 
   // Computed property to retrieve the hero's image URL
   String get imageUrl {
-    String formattedName = localizedName.toLowerCase().replaceAll(' ', '_').replaceAll('-', '');
+    String formattedName = localizedName
+        .toLowerCase()
+        .replaceAll(' ', '_')
+        .replaceAll('-', '');
 
     // Check for custom URL first
     if (urlExceptions.containsKey(formattedName)) {
@@ -72,7 +76,7 @@ class DotaHero {
       formattedName = nameExceptions[formattedName]!;
     }
 
-    // Default URL
-    return 'https://cdn.dota2.com/apps/dota2/images/heroes/${formattedName}_full.png';
+    // Default URL (use Steam Cloudflare CDN dota_react images to avoid SSL issues)
+    return 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${formattedName}.png';
   }
 }

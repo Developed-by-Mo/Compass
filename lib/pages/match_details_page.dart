@@ -1,16 +1,15 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:graphql/client.dart';
 import 'package:compass/pages/player_details_page.dart';
-import 'dart:math';
 
 import '../dota_hero.dart';
 import '../services/player_services.dart';
 import '../utils/config.dart';
 import '../utils/theme_utils.dart';
-import 'package:http/http.dart' as http;
+// import 'package:http/http.dart' as http;
+import 'package:compass/utils/http_client.dart';
 
 import 'hero_info.dart';
 
@@ -23,7 +22,13 @@ class MatchDetailsPage extends StatefulWidget {
   _MatchDetailsPageState createState() => _MatchDetailsPageState();
 }
 
-enum SortType { networth, goldPerMinute, experiencePerMinute, heroDamage, towerDamage }
+enum SortType {
+  networth,
+  goldPerMinute,
+  experiencePerMinute,
+  heroDamage,
+  towerDamage,
+}
 
 SortType _currentSort = SortType.networth;
 
@@ -52,11 +57,7 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'lib/images/${team}.png',
-              width: 80,
-              height: 80,
-            ),
+            Image.asset('lib/images/${team}.png', width: 80, height: 80),
             SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,15 +78,16 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: isWinner
-                          ? [
-                        Color(0xFF1B5E20),  // Darker green
-                        Color(0xFF4CAF50),  // Lighter green
-                      ]
-                          : [
-                        Colors.grey[800]!.withOpacity(0.8),
-                        Colors.grey[600]!.withOpacity(0.8),
-                      ],
+                      colors:
+                          isWinner
+                              ? [
+                                Color(0xFF1B5E20), // Darker green
+                                Color(0xFF4CAF50), // Lighter green
+                              ]
+                              : [
+                                Colors.grey[800]!.withOpacity(0.8),
+                                Colors.grey[600]!.withOpacity(0.8),
+                              ],
                     ),
                   ),
                   child: Text(
@@ -107,12 +109,18 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
   }
 
   // Item display widget with improved design
-  Widget _buildItemImage(Map<int, String>? itemImages, int? itemId, bool isDarkMode) {
-    final backgroundColor = isDarkMode
-        ? Color.fromARGB(255, 20, 20, 20)
-        : Colors.grey[300]!;
+  Widget _buildItemImage(
+    Map<int, String>? itemImages,
+    int? itemId,
+    bool isDarkMode,
+  ) {
+    final backgroundColor =
+        isDarkMode ? Color.fromARGB(255, 20, 20, 20) : Colors.grey[300]!;
 
-    if (itemId == null || itemId == 0 || itemImages == null || !itemImages.containsKey(itemId)) {
+    if (itemId == null ||
+        itemId == 0 ||
+        itemImages == null ||
+        !itemImages.containsKey(itemId)) {
       return Container(
         width: 40,
         height: 40,
@@ -121,11 +129,7 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
-          child: Icon(
-              Icons.block,
-              color: Colors.grey[600],
-              size: 20
-          ),
+          child: Icon(Icons.block, color: Colors.grey[600], size: 20),
         ),
       );
     }
@@ -137,22 +141,29 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
         width: 40,
         height: 40,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          width: 40,
-          height: 40,
-          color: backgroundColor,
-          child: Icon(Icons.broken_image),
-        ),
+        errorBuilder:
+            (context, error, stackTrace) => Container(
+              width: 40,
+              height: 40,
+              color: backgroundColor,
+              child: Icon(Icons.broken_image),
+            ),
       ),
     );
   }
 
-  Widget _buildNeutralItemImage(Map<int, String>? itemImages, int? itemId, bool isDarkMode) {
-    final backgroundColor = isDarkMode
-        ? Color.fromARGB(255, 20, 20, 20)
-        : Colors.grey[300]!;
+  Widget _buildNeutralItemImage(
+    Map<int, String>? itemImages,
+    int? itemId,
+    bool isDarkMode,
+  ) {
+    final backgroundColor =
+        isDarkMode ? Color.fromARGB(255, 20, 20, 20) : Colors.grey[300]!;
 
-    if (itemId == null || itemId == 0 || itemImages == null || !itemImages.containsKey(itemId)) {
+    if (itemId == null ||
+        itemId == 0 ||
+        itemImages == null ||
+        !itemImages.containsKey(itemId)) {
       return Container(
         width: 40,
         height: 40,
@@ -165,11 +176,7 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
           ),
         ),
         child: Center(
-          child: Icon(
-              Icons.block,
-              color: Colors.grey[600],
-              size: 20
-          ),
+          child: Icon(Icons.block, color: Colors.grey[600], size: 20),
         ),
       );
     }
@@ -215,8 +222,8 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
         link: HttpLink(
           'https://api.stratz.com/graphql',
           defaultHeaders: {
-            'Authorization': Config.stratzApiKey,
-            'User-Agent': 'STRATZ_API'
+            'Authorization': 'Bearer ${Config.stratzApiKey}',
+            'User-Agent': 'STRATZ_API',
           },
         ),
         cache: GraphQLCache(),
@@ -262,9 +269,7 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
           }
         }
       '''),
-        variables: {
-          'matchId': widget.matchId,
-        },
+        variables: {'matchId': widget.matchId},
       );
 
       final QueryResult result = await client.query(options);
@@ -293,11 +298,16 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
 
   Widget _buildPlayerCard(Map<String, dynamic> player, bool isDarkMode) {
     final heroId = player['heroId'];
-    final heroImageUrl = PlayerService.getHeroImageUrl(heroId, _heroesMap!);
-    final heroName = PlayerService.getHeroName(heroId, _heroesMap!);
+    final bool hasHeroesMap = _heroesMap != null && _heroesMap!.isNotEmpty;
+    final heroImageUrl =
+        hasHeroesMap ? PlayerService.getHeroImageUrl(heroId, _heroesMap!) : '';
+    final heroName =
+        hasHeroesMap
+            ? PlayerService.getHeroName(heroId, _heroesMap!)
+            : 'Unknown Hero';
     final steamAccountId = player['steamAccountId']?.toString();
     final neutralItemId = player['neutral0Id'];
-    final dotaHero = _heroesMap?[heroId];
+    final dotaHero = _heroesMap != null ? _heroesMap![heroId] : null;
     print('Player Hero ${player['heroId']} - Neutral Item ID: $neutralItemId');
     if (neutralItemId != null && neutralItemId != 0) {
       print('Neutral item image URL: ${_itemImages?[neutralItemId]}');
@@ -314,7 +324,8 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
           margin: EdgeInsets.symmetric(vertical: 8),
           padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDarkMode ? Color.fromARGB(255, 20, 20, 20) : Colors.grey[200],
+            color:
+                isDarkMode ? Color.fromARGB(255, 20, 20, 20) : Colors.grey[200],
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -328,31 +339,37 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                       // Steam Avatar
                       GestureDetector(
                         onTap: () {
-                          if (steamAccountId != null && steamAccountId.isNotEmpty && playerName != 'Unknown Player') {
+                          if (steamAccountId != null &&
+                              steamAccountId.isNotEmpty &&
+                              playerName != 'Unknown Player') {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => PlayerDetailsPage(
-                                  playerName: playerName,
-                                  accountId: steamAccountId,
-                                  avatarUrl: avatarUrl ?? '',
-                                  showAppBar: true,
-                                ),
+                                builder:
+                                    (context) => PlayerDetailsPage(
+                                      playerName: playerName,
+                                      accountId: steamAccountId,
+                                      avatarUrl: avatarUrl ?? '',
+                                      showAppBar: true,
+                                    ),
                               ),
                             );
                           }
                         },
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(25),
-                          child: avatarUrl != null
-                              ? Image.network(
-                            avatarUrl,
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(isDarkMode),
-                          )
-                              : _buildDefaultAvatar(isDarkMode),
+                          child:
+                              avatarUrl != null
+                                  ? Image.network(
+                                    avatarUrl,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            _buildDefaultAvatar(isDarkMode),
+                                  )
+                                  : _buildDefaultAvatar(isDarkMode),
                         ),
                       ),
                       SizedBox(height: 8),
@@ -376,7 +393,9 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                             width: 60,
                             height: 60,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
+                            errorBuilder:
+                                (context, error, stackTrace) =>
+                                    Icon(Icons.error),
                           ),
                         ),
                       ),
@@ -400,20 +419,29 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                         Text(
                           heroName,
                           style: TextStyle(
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[700],
                             fontSize: 12,
                           ),
                         ),
                         Text(
                           _getPositionText(player['position']),
                           style: TextStyle(
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[700],
                           ),
                         ),
                         Text(
                           '${player['kills']}/${player['deaths']}/${player['assists']}',
                           style: TextStyle(
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[700],
                           ),
                         ),
                         Row(
@@ -427,7 +455,10 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                             Text(
                               '${player['networth']}',
                               style: TextStyle(
-                                color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                color:
+                                    isDarkMode
+                                        ? Colors.grey[400]
+                                        : Colors.grey[700],
                               ),
                             ),
                           ],
@@ -444,8 +475,14 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                         children: [
                           for (int i = 0; i < 3; i++)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: _buildItemImage(_itemImages, player['item${i}Id'], isDarkMode),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4.0,
+                              ),
+                              child: _buildItemImage(
+                                _itemImages,
+                                player['item${i}Id'],
+                                isDarkMode,
+                              ),
                             ),
                         ],
                       ),
@@ -455,8 +492,14 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                         children: [
                           for (int i = 3; i < 6; i++)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: _buildItemImage(_itemImages, player['item${i}Id'], isDarkMode),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4.0,
+                              ),
+                              child: _buildItemImage(
+                                _itemImages,
+                                player['item${i}Id'],
+                                isDarkMode,
+                              ),
                             ),
                         ],
                       ),
@@ -466,14 +509,24 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                         children: [
                           for (int i = 0; i < 3; i++)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: _buildItemImage(_itemImages, player['backpack${i}Id'], isDarkMode),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4.0,
+                              ),
+                              child: _buildItemImage(
+                                _itemImages,
+                                player['backpack${i}Id'],
+                                isDarkMode,
+                              ),
                             ),
                         ],
                       ),
                     ],
                   ),
-                  _buildNeutralItemImage(_itemImages, player['neutral0Id'], isDarkMode),
+                  _buildNeutralItemImage(
+                    _itemImages,
+                    player['neutral0Id'],
+                    isDarkMode,
+                  ),
                 ],
               ),
 
@@ -497,7 +550,7 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
     );
   }
 
-  String _getPositionText(String position) {
+  String _getPositionText(String? position) {
     switch (position) {
       case 'POSITION_1':
         return 'Carry';
@@ -510,15 +563,18 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
       case 'POSITION_5':
         return 'Hard Support';
       default:
-        return position;
+        return position ?? 'Unknown Role';
     }
   }
 
-  Future<Map<String, dynamic>?> _fetchPlayerProfile(String steamAccountId) async {
+  Future<Map<String, dynamic>?> _fetchPlayerProfile(
+    String steamAccountId,
+  ) async {
     try {
-      final response = await http.get(
-        Uri.parse('https://api.opendota.com/api/players/$steamAccountId'),
-      ).timeout(const Duration(seconds: 5));
+      final response = await ApiClient.getOpenDota(
+        'players/$steamAccountId',
+        timeout: const Duration(seconds: 5),
+      );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -530,25 +586,38 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
   }
 
   Widget _buildHeroStatistics(bool isDarkMode) {
-    List<Map<String, dynamic>> sortedPlayers = List.from(_matchData?['players'] ?? []);
+    List<Map<String, dynamic>> sortedPlayers = List.from(
+      _matchData?['players'] ?? [],
+    );
 
     switch (_currentSort) {
       case SortType.goldPerMinute:
-        sortedPlayers.sort((a, b) => (b['goldPerMinute'] ?? 0).compareTo(a['goldPerMinute'] ?? 0));
+        sortedPlayers.sort(
+          (a, b) =>
+              (b['goldPerMinute'] ?? 0).compareTo(a['goldPerMinute'] ?? 0),
+        );
         break;
       case SortType.experiencePerMinute:
-        sortedPlayers.sort((a, b) => (b['experiencePerMinute'] ?? 0).compareTo(a['experiencePerMinute'] ?? 0));
+        sortedPlayers.sort(
+          (a, b) => (b['experiencePerMinute'] ?? 0).compareTo(
+            a['experiencePerMinute'] ?? 0,
+          ),
+        );
         break;
       case SortType.heroDamage:
-        sortedPlayers.sort((a, b) => (b['heroDamage'] ?? 0).compareTo(a['heroDamage'] ?? 0));
+        sortedPlayers.sort(
+          (a, b) => (b['heroDamage'] ?? 0).compareTo(a['heroDamage'] ?? 0),
+        );
         break;
       case SortType.towerDamage:
-        sortedPlayers.sort((a, b) => (b['towerDamage'] ?? 0).compareTo(a['towerDamage'] ?? 0));
+        sortedPlayers.sort(
+          (a, b) => (b['towerDamage'] ?? 0).compareTo(a['towerDamage'] ?? 0),
+        );
         break;
       case SortType.networth:
-        sortedPlayers.sort((a, b) => (b['networth'] ?? 0).compareTo(a['networth'] ?? 0));
-        break;
-      default:
+        sortedPlayers.sort(
+          (a, b) => (b['networth'] ?? 0).compareTo(a['networth'] ?? 0),
+        );
         break;
     }
 
@@ -569,32 +638,53 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
           child: Row(
             children: [
               _buildStatSortButton('GPM', SortType.goldPerMinute, isDarkMode),
-              _buildStatSortButton('XPM', SortType.experiencePerMinute, isDarkMode),
-              _buildStatSortButton('Hero Damage', SortType.heroDamage, isDarkMode),
-              _buildStatSortButton('Tower Damage', SortType.towerDamage, isDarkMode),
+              _buildStatSortButton(
+                'XPM',
+                SortType.experiencePerMinute,
+                isDarkMode,
+              ),
+              _buildStatSortButton(
+                'Hero Damage',
+                SortType.heroDamage,
+                isDarkMode,
+              ),
+              _buildStatSortButton(
+                'Tower Damage',
+                SortType.towerDamage,
+                isDarkMode,
+              ),
             ],
           ),
         ),
-        ...sortedPlayers.map((player) => _buildStatRow(player, isDarkMode)).toList(),
+        ...sortedPlayers
+            .map((player) => _buildStatRow(player, isDarkMode))
+            .toList(),
       ],
     );
   }
 
-  Widget _buildStatSortButton(String label, SortType sortType, bool isDarkMode) {
+  Widget _buildStatSortButton(
+    String label,
+    SortType sortType,
+    bool isDarkMode,
+  ) {
     final isSelected = _currentSort == sortType;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: ElevatedButton(
-        onPressed: () => setState(() {
-          _currentSort = sortType;
-        }),
+        onPressed:
+            () => setState(() {
+              _currentSort = sortType;
+            }),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected
-              ? (isDarkMode ? Colors.grey[700] : Colors.grey[300])
-              : (isDarkMode ? Colors.grey[900] : Colors.grey[200]),
-          foregroundColor: isSelected
-              ? (isDarkMode ? Colors.white : Colors.black)
-              : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+          backgroundColor:
+              isSelected
+                  ? (isDarkMode ? Colors.grey[700] : Colors.grey[300])
+                  : (isDarkMode ? Colors.grey[900] : Colors.grey[200]),
+          foregroundColor:
+              isSelected
+                  ? (isDarkMode ? Colors.white : Colors.black)
+                  : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
         ),
         child: Text(label),
       ),
@@ -643,7 +733,9 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
           Expanded(
             child: Text(
               getDisplayValue(),
-              style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
+              style: TextStyle(
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+              ),
             ),
           ),
         ],
@@ -651,19 +743,16 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final isDarkMode = ThemeUtils.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: isDarkMode
-          ? const Color.fromARGB(255, 10, 10, 10)
-          : Colors.white,
+      backgroundColor:
+          isDarkMode ? const Color.fromARGB(255, 10, 10, 10) : Colors.white,
       appBar: AppBar(
-        surfaceTintColor: isDarkMode
-            ? const Color.fromARGB(255, 10, 10, 10)
-            : Colors.white,
+        surfaceTintColor:
+            isDarkMode ? const Color.fromARGB(255, 10, 10, 10) : Colors.white,
         title: Text(
           'Match Details',
           style: TextStyle(
@@ -672,84 +761,106 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: isDarkMode
-            ? const Color.fromARGB(255, 10, 10, 10)
-            : Colors.white,
+        backgroundColor:
+            isDarkMode ? const Color.fromARGB(255, 10, 10, 10) : Colors.white,
         elevation: 0,
         iconTheme: IconThemeData(
           color: isDarkMode ? Colors.white : Colors.black,
         ),
       ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: isDarkMode ? Colors.grey[200] : Colors.black,))
-          : _errorMessage.isNotEmpty
-          ? Center(child: Text(_errorMessage))
-          : SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Match Overview
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDarkMode ? Colors.grey[900] : Colors.grey[200],
-                borderRadius: BorderRadius.circular(12),
+      body:
+          _isLoading
+              ? Center(
+                child: CircularProgressIndicator(
+                  color: isDarkMode ? Colors.grey[200] : Colors.black,
+                ),
+              )
+              : _errorMessage.isNotEmpty
+              ? Center(child: Text(_errorMessage))
+              : SingleChildScrollView(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Match Overview
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.grey[900] : Colors.grey[200],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Match ID: ${widget.matchId}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Match Duration: ${_formatMatchDuration(_matchData?['durationSeconds'])}',
+                            style: TextStyle(
+                              color:
+                                  isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
+                            ),
+                          ),
+                          Text(
+                            '${_matchData?['didRadiantWin'] ? 'Radiant' : 'Dire'} Victory',
+                            style: TextStyle(
+                              color:
+                                  _matchData?['didRadiantWin']
+                                      ? Colors.green
+                                      : Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: 16),
+                    SizedBox(height: 20),
+
+                    // Radiant Players
+                    _buildTeamHeader(
+                      'Radiant',
+                      _matchData?['didRadiantWin'] ?? false,
+                      isDarkMode,
+                    ),
+                    ..._matchData?['players'] != null
+                        ? (_matchData!['players'] as List)
+                            .where((player) => player['isRadiant'] == true)
+                            .map(
+                              (player) => _buildPlayerCard(player, isDarkMode),
+                            )
+                            .toList()
+                        : [],
+
+                    SizedBox(height: 60),
+
+                    // Dire Players
+                    _buildTeamHeader(
+                      'Dire',
+                      !(_matchData?['didRadiantWin'] ?? false),
+                      isDarkMode,
+                    ),
+                    ..._matchData?['players'] != null
+                        ? (_matchData!['players'] as List)
+                            .where((player) => player['isRadiant'] == false)
+                            .map(
+                              (player) => _buildPlayerCard(player, isDarkMode),
+                            )
+                            .toList()
+                        : [],
+                    _buildHeroStatistics(isDarkMode),
+                  ],
+                ),
               ),
-              child: Column(
-                children: [
-                  Text(
-                    'Match ID: ${widget.matchId}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Match Duration: ${_formatMatchDuration(_matchData?['durationSeconds'])}',
-                    style: TextStyle(
-                      color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-                    ),
-                  ),
-                  Text(
-                    '${_matchData?['didRadiantWin'] ? 'Radiant' : 'Dire'} Victory',
-                    style: TextStyle(
-                      color: _matchData?['didRadiantWin']
-                          ? Colors.green
-                          : Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: 16),
-            SizedBox(height: 20),
-
-            // Radiant Players
-            _buildTeamHeader('Radiant', _matchData?['didRadiantWin'] ?? false, isDarkMode),
-            ..._matchData?['players'] != null
-                ? (_matchData!['players'] as List)
-                .where((player) => player['isRadiant'] == true)
-                .map((player) => _buildPlayerCard(player, isDarkMode))
-                .toList()
-                : [],
-
-            SizedBox(height: 60),
-
-// Dire Players
-            _buildTeamHeader('Dire', !(_matchData?['didRadiantWin'] ?? false), isDarkMode),
-            ..._matchData?['players'] != null
-                ? (_matchData!['players'] as List)
-                .where((player) => player['isRadiant'] == false)
-                .map((player) => _buildPlayerCard(player, isDarkMode))
-                .toList()
-                : [],_buildHeroStatistics(isDarkMode),],
-        ),
-      ),
     );
   }
 

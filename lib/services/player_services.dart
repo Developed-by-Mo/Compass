@@ -4,23 +4,24 @@ import 'dart:convert';
 
 import 'package:graphql/client.dart';
 
-import 'package:http/http.dart' as http;
+// import 'package:http/http.dart' as http;
 
 import '../dota_hero.dart';
 import '../utils/config.dart';
+import '../utils/http_client.dart';
 
 class PlayerService {
-  static const _baseUrl = 'https://api.opendota.com/api';
+  // static const _baseUrl = 'https://api.opendota.com/api';
   static final HttpLink _httpLink = HttpLink(
     'https://api.stratz.com/graphql',
     defaultHeaders: {
-      'Authorization': Config.stratzApiKey,
-      'User-Agent': 'STRATZ_API'
+      'Authorization': 'Bearer ${Config.stratzApiKey}',
+      'User-Agent': 'STRATZ_API',
     },
   );
 
   static Future<Map<int, DotaHero>> fetchHeroes() async {
-    final response = await http.get(Uri.parse('$_baseUrl/heroes'));
+    final response = await ApiClient.getOpenDota('heroes');
 
     if (response.statusCode == 200) {
       final List<dynamic> heroesData = json.decode(response.body);
@@ -67,7 +68,8 @@ class PlayerService {
         }
 
         // Construct the URL with the sanitized name
-        String imageUrl = 'https://cdn.stratz.com/images/dota2/items/$itemName.png';
+        String imageUrl =
+            'https://cdn.stratz.com/images/dota2/items/$itemName.png';
         itemImages[item['id']] = imageUrl;
       }
     }
@@ -81,7 +83,9 @@ class PlayerService {
     cache: GraphQLCache(),
   );
 
-  static Future<List<Map<String, dynamic>>> fetchWinrateHistory(String accountId) async {
+  static Future<List<Map<String, dynamic>>> fetchWinrateHistory(
+    String accountId,
+  ) async {
     try {
       final QueryOptions options = QueryOptions(
         document: gql(r'''
@@ -116,9 +120,8 @@ class PlayerService {
         throw Exception('No matches data available');
       }
 
-      final matches = (playerData['matches'] as List)
-          .cast<Map<String, dynamic>>()
-          .toList();
+      final matches =
+          (playerData['matches'] as List).cast<Map<String, dynamic>>().toList();
 
       // Calculate rolling winrate every 10 matches
       List<Map<String, dynamic>> winrateHistory = [];
@@ -133,8 +136,8 @@ class PlayerService {
             .cast<Map<String, dynamic>>()
             .firstWhere(
               (player) => player['steamAccountId'].toString() == accountId,
-          orElse: () => <String, dynamic>{},
-        );
+              orElse: () => <String, dynamic>{},
+            );
 
         if (playerMatchData.isEmpty) continue;
 
@@ -152,9 +155,10 @@ class PlayerService {
         if (currentMatches % 10 == 0) {
           winrateHistory.add({
             'matchCount': currentMatches,
-            'winrate': currentMatches > 0
-                ? (currentWins / currentMatches * 100).toStringAsFixed(2)
-                : '0.00'
+            'winrate':
+                currentMatches > 0
+                    ? (currentWins / currentMatches * 100).toStringAsFixed(2)
+                    : '0.00',
           });
         }
       }
@@ -163,9 +167,10 @@ class PlayerService {
       if (currentMatches % 10 != 0) {
         winrateHistory.add({
           'matchCount': currentMatches,
-          'winrate': currentMatches > 0
-              ? (currentWins / currentMatches * 100).toStringAsFixed(2)
-              : '0.00'
+          'winrate':
+              currentMatches > 0
+                  ? (currentWins / currentMatches * 100).toStringAsFixed(2)
+                  : '0.00',
         });
       }
 
@@ -177,11 +182,14 @@ class PlayerService {
     }
   }
 
-  static Future<Map<String, dynamic>?> fetchPlayerProfile(String steamAccountId) async {
+  static Future<Map<String, dynamic>?> fetchPlayerProfile(
+    String steamAccountId,
+  ) async {
     try {
-      final response = await http.get(
-        Uri.parse('https://api.opendota.com/api/players/$steamAccountId'),
-      ).timeout(const Duration(seconds: 5));
+      final response = await ApiClient.getOpenDota(
+        'players/$steamAccountId',
+        timeout: const Duration(seconds: 5),
+      );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -199,9 +207,9 @@ class PlayerService {
         link: HttpLink(
           'https://api.stratz.com/graphql',
           defaultHeaders: {
-            'Authorization': Config.stratzApiKey,
+            'Authorization': 'Bearer ${Config.stratzApiKey}',
             'Content-Type': 'application/json',
-            'User-Agent': 'STRATZ_API'
+            'User-Agent': 'STRATZ_API',
           },
         ),
         cache: GraphQLCache(),
@@ -217,9 +225,7 @@ class PlayerService {
         }
       }
       '''),
-        variables: {
-          'steamAccountId': int.parse(accountId),
-        },
+        variables: {'steamAccountId': int.parse(accountId)},
       );
 
       final QueryResult result = await client.query(options);
@@ -262,10 +268,10 @@ class PlayerService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> fetchHeroStats(String accountId) async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/players/$accountId/heroes'),
-    );
+  static Future<List<Map<String, dynamic>>> fetchHeroStats(
+    String accountId,
+  ) async {
+    final response = await ApiClient.getOpenDota('players/$accountId/heroes');
 
     if (response.statusCode == 200) {
       return (json.decode(response.body) as List).cast<Map<String, dynamic>>();
@@ -276,7 +282,9 @@ class PlayerService {
 
   static String convertToRelativeTime(int epochSeconds) {
     // Convert epoch seconds to DateTime
-    final matchDateTime = DateTime.fromMillisecondsSinceEpoch(epochSeconds * 1000);
+    final matchDateTime = DateTime.fromMillisecondsSinceEpoch(
+      epochSeconds * 1000,
+    );
     final now = DateTime.now();
 
     // Calculate the difference
@@ -303,7 +311,9 @@ class PlayerService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> fetchRecentMatches(String accountId) async {
+  static Future<List<Map<String, dynamic>>> fetchRecentMatches(
+    String accountId,
+  ) async {
     try {
       final QueryOptions options = QueryOptions(
         document: gql(r'''
@@ -354,41 +364,48 @@ class PlayerService {
         throw Exception('No matches data available');
       }
 
-      final matches = (playerData['matches'] as List)
-          .map((match) {
-        // Find the player's specific match data
-        final playerMatchData = (match['players'] as List)
-            .cast<Map<String, dynamic>>() // Ensure type casting
-            .firstWhere(
-              (player) => player['steamAccountId'].toString() == accountId,
-          orElse: () => <String, dynamic>{}, // Return an empty map instead of null
-        );
+      final matches =
+          (playerData['matches'] as List)
+              .map((match) {
+                // Find the player's specific match data
+                final playerMatchData = (match['players'] as List)
+                    .cast<Map<String, dynamic>>() // Ensure type casting
+                    .firstWhere(
+                      (player) =>
+                          player['steamAccountId'].toString() == accountId,
+                      orElse:
+                          () =>
+                              <
+                                String,
+                                dynamic
+                              >{}, // Return an empty map instead of null
+                    );
 
-        // If no player match data found, skip this match
-        if (playerMatchData.isEmpty) return null;
+                // If no player match data found, skip this match
+                if (playerMatchData.isEmpty) return null;
 
-        return {
-          'id': match['id'] ?? 0,
-          'hero_id': playerMatchData['heroId'] ?? 0,
-          'player_slot': playerMatchData['isRadiant'] == true ? 0 : 5,
-          'radiant_win': match['didRadiantWin'] ?? false,
-          'startDateTime': match['startDateTime'] ?? 0,
-          'duration': match['durationSeconds'] ?? 0,
-          'kills': playerMatchData['kills'] ?? 0,
-          'deaths': playerMatchData['deaths'] ?? 0,
-          'assists': playerMatchData['assists'] ?? 0,
-          'gameMode': match['gameMode'] ?? 'Unknown',
-          // Add item IDs to the match data
-          'item0Id': playerMatchData['item0Id'] ?? 0,
-          'item1Id': playerMatchData['item1Id'] ?? 0,
-          'item2Id': playerMatchData['item2Id'] ?? 0,
-          'item3Id': playerMatchData['item3Id'] ?? 0,
-          'item4Id': playerMatchData['item4Id'] ?? 0,
-          'item5Id': playerMatchData['item5Id'] ?? 0,
-        };
-      })
-          .whereType<Map<String, dynamic>>() // Filter out any null entries
-          .toList();
+                return {
+                  'id': match['id'] ?? 0,
+                  'hero_id': playerMatchData['heroId'] ?? 0,
+                  'player_slot': playerMatchData['isRadiant'] == true ? 0 : 5,
+                  'radiant_win': match['didRadiantWin'] ?? false,
+                  'startDateTime': match['startDateTime'] ?? 0,
+                  'duration': match['durationSeconds'] ?? 0,
+                  'kills': playerMatchData['kills'] ?? 0,
+                  'deaths': playerMatchData['deaths'] ?? 0,
+                  'assists': playerMatchData['assists'] ?? 0,
+                  'gameMode': match['gameMode'] ?? 'Unknown',
+                  // Add item IDs to the match data
+                  'item0Id': playerMatchData['item0Id'] ?? 0,
+                  'item1Id': playerMatchData['item1Id'] ?? 0,
+                  'item2Id': playerMatchData['item2Id'] ?? 0,
+                  'item3Id': playerMatchData['item3Id'] ?? 0,
+                  'item4Id': playerMatchData['item4Id'] ?? 0,
+                  'item5Id': playerMatchData['item5Id'] ?? 0,
+                };
+              })
+              .whereType<Map<String, dynamic>>() // Filter out any null entries
+              .toList();
 
       return matches;
     } catch (error, stackTrace) {
@@ -397,7 +414,6 @@ class PlayerService {
       rethrow;
     }
   }
-
 
   // static Future<List<Map<String, dynamic>>> fetchRecentMatches(String accountId) async {
   //   final response = await http.get(
@@ -414,20 +430,8 @@ class PlayerService {
   static String getHeroImageUrl(int heroId, Map<int, DotaHero> heroesMap) {
     if (heroesMap.containsKey(heroId)) {
       final hero = heroesMap[heroId]!;
-      String formattedName = hero.localizedName.toLowerCase().replaceAll(' ', '_').replaceAll('-', '');
-
-      // Check for custom URL first
-      if (DotaHero.urlExceptions.containsKey(formattedName)) {
-        return DotaHero.urlExceptions[formattedName]!;
-      }
-
-      // Apply name exceptions if needed
-      if (DotaHero.nameExceptions.containsKey(formattedName)) {
-        formattedName = DotaHero.nameExceptions[formattedName]!;
-      }
-
-      // Default URL
-      return 'https://cdn.dota2.com/apps/dota2/images/heroes/${formattedName}_full.png';
+      // Use centralized hero image logic from DotaHero (Cloudflare CDN)
+      return hero.imageUrl;
     }
     return ''; // Return empty string if hero not found
   }

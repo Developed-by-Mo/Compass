@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:compass/dota_hero.dart';
 import 'package:http/http.dart' as http;
+import 'package:compass/utils/http_client.dart';
 import 'dart:convert';
 import 'package:graphql/client.dart';
 import 'package:compass/utils/config.dart';
@@ -34,48 +35,49 @@ class CustomToggle extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
-        children: List.generate(
-          items.length,
-              (index) {
-            bool isSelected = selectedIndex == index;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => onToggle(index),
-                child: AnimatedContainer(
-                  duration: Duration(milliseconds: 200),
-                  margin: EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? (isDarkMode ? Colors.grey[800] : Colors.grey[600])
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: isSelected
-                        ? [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                        : null,
-                  ),
-                  child: Center(
-                    child: Text(
-                      items[index],
-                      style: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : (isDarkMode ? Colors.white70 : Colors.black87),
-                        fontFamily: "Inter",
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      ),
+        children: List.generate(items.length, (index) {
+          bool isSelected = selectedIndex == index;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onToggle(index),
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 200),
+                margin: EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? (isDarkMode ? Colors.grey[800] : Colors.grey[600])
+                          : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow:
+                      isSelected
+                          ? [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                          : null,
+                ),
+                child: Center(
+                  child: Text(
+                    items[index],
+                    style: TextStyle(
+                      color:
+                          isSelected
+                              ? Colors.white
+                              : (isDarkMode ? Colors.white70 : Colors.black87),
+                      fontFamily: "Inter",
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -84,10 +86,7 @@ class CustomToggle extends StatelessWidget {
 class HeroInfo extends StatefulWidget {
   final DotaHero hero;
 
-  const HeroInfo({
-    Key? key,
-    required this.hero,
-  }) : super(key: key);
+  const HeroInfo({Key? key, required this.hero}) : super(key: key);
 
   @override
   _HeroInfoState createState() => _HeroInfoState();
@@ -103,7 +102,7 @@ class _HeroInfoState extends State<HeroInfo> {
   bool _isStatsLoading = false;
 
   Future<DotaHero> fetchCompleteHeroData(int heroId) async {
-    final response = await http.get(Uri.parse('https://api.opendota.com/api/heroes'));
+    final response = await ApiClient.getOpenDota('heroes');
 
     if (response.statusCode == 200) {
       List<dynamic> jsonResponse = json.decode(response.body);
@@ -119,8 +118,8 @@ class _HeroInfoState extends State<HeroInfo> {
   final HttpLink httpLink = HttpLink(
     'https://api.stratz.com/graphql',
     defaultHeaders: {
-      'Authorization': Config.stratzApiKey,
-      'User-Agent': 'STRATZ_API'
+      'Authorization': 'Bearer ${Config.stratzApiKey}',
+      'User-Agent': 'STRATZ_API',
     },
   );
 
@@ -129,7 +128,9 @@ class _HeroInfoState extends State<HeroInfo> {
       onTap: () async {
         try {
           // Fetch complete hero data before navigation
-          DotaHero completeHero = await fetchCompleteHeroData(matchup['opponent_hero_id']);
+          DotaHero completeHero = await fetchCompleteHeroData(
+            matchup['opponent_hero_id'],
+          );
 
           if (!mounted) return;
 
@@ -171,7 +172,11 @@ class _HeroInfoState extends State<HeroInfo> {
                         return Container(
                           color: Colors.grey[800],
                           alignment: Alignment.center,
-                          child: Icon(Icons.error, size: 50, color: Colors.redAccent),
+                          child: Icon(
+                            Icons.error,
+                            size: 50,
+                            color: Colors.redAccent,
+                          ),
                         );
                       },
                     ),
@@ -181,9 +186,10 @@ class _HeroInfoState extends State<HeroInfo> {
                     child: Container(
                       width: double.infinity,
                       height: 100.0,
-                      color: isDarkMode
-                          ? Colors.black.withOpacity(0.6)
-                          : Colors.white.withOpacity(0.05),
+                      color:
+                          isDarkMode
+                              ? Colors.black.withOpacity(0.6)
+                              : Colors.white.withOpacity(0.05),
                     ),
                   ),
                 ],
@@ -241,10 +247,7 @@ class _HeroInfoState extends State<HeroInfo> {
                       ),
                     ),
                     // Add a subtle arrow icon to indicate it's clickable
-                    Icon(
-                      Icons.chevron_right,
-                      color: Colors.white70,
-                    ),
+                    Icon(Icons.chevron_right, color: Colors.white70),
                   ],
                 ),
               ),
@@ -289,9 +292,7 @@ class _HeroInfoState extends State<HeroInfo> {
           }
         }
       '''),
-        variables: {
-          'heroId': widget.hero.id,
-        },
+        variables: {'heroId': widget.hero.id},
       );
 
       final QueryResult result = await _client.query(options);
@@ -321,10 +322,7 @@ class _HeroInfoState extends State<HeroInfo> {
   @override
   void initState() {
     super.initState();
-    _client = GraphQLClient(
-      link: httpLink,
-      cache: GraphQLCache(),
-    );
+    _client = GraphQLClient(link: httpLink, cache: GraphQLCache());
     fetchMatchupDetails();
     fetchHeroStats();
   }
@@ -339,13 +337,25 @@ class _HeroInfoState extends State<HeroInfo> {
   Widget getAttributeIcon(String primaryAttr) {
     switch (primaryAttr) {
       case 'all':
-        return Image.asset('lib/icons/attr_universal.png', width: 24, height: 24);
+        return Image.asset(
+          'lib/icons/attr_universal.png',
+          width: 24,
+          height: 24,
+        );
       case 'int':
-        return Image.asset('lib/icons/attr_intelligence.png', width: 24, height: 24);
+        return Image.asset(
+          'lib/icons/attr_intelligence.png',
+          width: 24,
+          height: 24,
+        );
       case 'agi':
         return Image.asset('lib/icons/attr_agility.png', width: 24, height: 24);
       case 'str':
-        return Image.asset('lib/icons/attr_strength.png', width: 24, height: 24);
+        return Image.asset(
+          'lib/icons/attr_strength.png',
+          width: 24,
+          height: 24,
+        );
       default:
         return SizedBox();
     }
@@ -388,9 +398,7 @@ class _HeroInfoState extends State<HeroInfo> {
           }
         }
       '''),
-        variables: {
-          'heroId': widget.hero.id,
-        },
+        variables: {'heroId': widget.hero.id},
       );
 
       final QueryResult result = await _client.query(options);
@@ -401,14 +409,14 @@ class _HeroInfoState extends State<HeroInfo> {
       }
 
       // Fetch all heroes to get names
-      final heroNamesResponse = await _httpClient.get(
-        Uri.parse('https://api.opendota.com/api/heroes'),
-      );
+      final heroNamesResponse = await ApiClient.getOpenDota('heroes');
 
       Map<int, String> heroNames = {};
       if (heroNamesResponse.statusCode == 200) {
         List<dynamic> heroesJson = json.decode(heroNamesResponse.body);
-        heroNames = {for (var hero in heroesJson) hero['id']: hero['localized_name']};
+        heroNames = {
+          for (var hero in heroesJson) hero['id']: hero['localized_name'],
+        };
       }
 
       // Process matchup data
@@ -416,13 +424,15 @@ class _HeroInfoState extends State<HeroInfo> {
       Set<int> processedHeroIds = {};
 
       // Process advantage matchups
-      var advantageMatchups = result.data?['heroStats']['heroVsHeroMatchup']['advantage'] ?? [];
+      var advantageMatchups =
+          result.data?['heroStats']['heroVsHeroMatchup']['advantage'] ?? [];
       for (var advantageGroup in advantageMatchups) {
         var vsList = advantageGroup['vs'];
         for (var matchup in vsList) {
-          int opponentHeroId = matchup['heroId1'] == widget.hero.id
-              ? matchup['heroId2']
-              : matchup['heroId1'];
+          int opponentHeroId =
+              matchup['heroId1'] == widget.hero.id
+                  ? matchup['heroId2']
+                  : matchup['heroId1'];
 
           if (processedHeroIds.contains(opponentHeroId)) continue;
 
@@ -430,22 +440,31 @@ class _HeroInfoState extends State<HeroInfo> {
           double heroWinRate, opponentWinRate;
           if (matchup['heroId1'] == widget.hero.id) {
             heroWinRate = (matchup['winCount'] / matchup['matchCount']) * 100;
-            opponentWinRate = (matchup['matchCount'] - matchup['winCount']) / matchup['matchCount'] * 100;
+            opponentWinRate =
+                (matchup['matchCount'] - matchup['winCount']) /
+                matchup['matchCount'] *
+                100;
           } else {
-            opponentWinRate = (matchup['winCount'] / matchup['matchCount']) * 100;
-            heroWinRate = (matchup['matchCount'] - matchup['winCount']) / matchup['matchCount'] * 100;
+            opponentWinRate =
+                (matchup['winCount'] / matchup['matchCount']) * 100;
+            heroWinRate =
+                (matchup['matchCount'] - matchup['winCount']) /
+                matchup['matchCount'] *
+                100;
           }
 
           String opponentHeroName = heroNames[opponentHeroId] ?? 'Unknown Hero';
-          String opponentHeroImage = 'https://cdn.dota2.com/apps/dota2/images/heroes/${opponentHeroName.toLowerCase().replaceAll(' ', '_').replaceAll('-', '')}_full.png';
-          opponentHeroImage = DotaHero(
-              id: opponentHeroId,
-              name: opponentHeroName,
-              localizedName: opponentHeroName,
-              primaryAttr: '',
-              attackType: '',
-              roles: []
-          ).imageUrl;
+          String opponentHeroImage =
+              'https://cdn.dota2.com/apps/dota2/images/heroes/${opponentHeroName.toLowerCase().replaceAll(' ', '_').replaceAll('-', '')}_full.png';
+          opponentHeroImage =
+              DotaHero(
+                id: opponentHeroId,
+                name: opponentHeroName,
+                localizedName: opponentHeroName,
+                primaryAttr: '',
+                attackType: '',
+                roles: [],
+              ).imageUrl;
 
           matchupDetails.add({
             'opponent_hero_name': opponentHeroName,
@@ -462,13 +481,15 @@ class _HeroInfoState extends State<HeroInfo> {
       }
 
       // Process disadvantage matchups
-      var disadvantageMatchups = result.data?['heroStats']['heroVsHeroMatchup']['disadvantage'] ?? [];
+      var disadvantageMatchups =
+          result.data?['heroStats']['heroVsHeroMatchup']['disadvantage'] ?? [];
       for (var disadvantageGroup in disadvantageMatchups) {
         var vsList = disadvantageGroup['vs'];
         for (var matchup in vsList) {
-          int opponentHeroId = matchup['heroId1'] == widget.hero.id
-              ? matchup['heroId2']
-              : matchup['heroId1'];
+          int opponentHeroId =
+              matchup['heroId1'] == widget.hero.id
+                  ? matchup['heroId2']
+                  : matchup['heroId1'];
 
           if (processedHeroIds.contains(opponentHeroId)) continue;
 
@@ -476,14 +497,22 @@ class _HeroInfoState extends State<HeroInfo> {
           double heroWinRate, opponentWinRate;
           if (matchup['heroId1'] == widget.hero.id) {
             heroWinRate = (matchup['winCount'] / matchup['matchCount']) * 100;
-            opponentWinRate = (matchup['matchCount'] - matchup['winCount']) / matchup['matchCount'] * 100;
+            opponentWinRate =
+                (matchup['matchCount'] - matchup['winCount']) /
+                matchup['matchCount'] *
+                100;
           } else {
-            opponentWinRate = (matchup['winCount'] / matchup['matchCount']) * 100;
-            heroWinRate = (matchup['matchCount'] - matchup['winCount']) / matchup['matchCount'] * 100;
+            opponentWinRate =
+                (matchup['winCount'] / matchup['matchCount']) * 100;
+            heroWinRate =
+                (matchup['matchCount'] - matchup['winCount']) /
+                matchup['matchCount'] *
+                100;
           }
 
           String opponentHeroName = heroNames[opponentHeroId] ?? 'Unknown Hero';
-          String opponentHeroImage = 'https://cdn.dota2.com/apps/dota2/images/heroes/${opponentHeroName.toLowerCase().replaceAll(' ', '_').replaceAll('-', '')}_full.png';
+          String opponentHeroImage =
+              'https://cdn.dota2.com/apps/dota2/images/heroes/${opponentHeroName.toLowerCase().replaceAll(' ', '_').replaceAll('-', '')}_full.png';
 
           matchupDetails.add({
             'opponent_hero_name': opponentHeroName,
@@ -513,15 +542,21 @@ class _HeroInfoState extends State<HeroInfo> {
     }
   }
 
-
-
   void _sortMatchups(List<Map<String, dynamic>> matchups) {
     if (_sortOption == 'Highest Win Rate') {
-      matchups.sort((a, b) => double.parse(b['win_rate']).compareTo(double.parse(a['win_rate'])));
+      matchups.sort(
+        (a, b) =>
+            double.parse(b['win_rate']).compareTo(double.parse(a['win_rate'])),
+      );
     } else if (_sortOption == 'Lowest Win Rate') {
-      matchups.sort((a, b) => double.parse(a['win_rate']).compareTo(double.parse(b['win_rate'])));
+      matchups.sort(
+        (a, b) =>
+            double.parse(a['win_rate']).compareTo(double.parse(b['win_rate'])),
+      );
     } else if (_sortOption == 'Alphabetically') {
-      matchups.sort((a, b) => a['opponent_hero_name'].compareTo(b['opponent_hero_name']));
+      matchups.sort(
+        (a, b) => a['opponent_hero_name'].compareTo(b['opponent_hero_name']),
+      );
     }
   }
 
@@ -529,9 +564,7 @@ class _HeroInfoState extends State<HeroInfo> {
     if (_isStatsLoading) {
       return SliverToBoxAdapter(
         child: Center(
-          child: CircularProgressIndicator(
-            color: Colors.grey[200],
-          ),
+          child: CircularProgressIndicator(color: Colors.grey[200]),
         ),
       );
     }
@@ -541,16 +574,36 @@ class _HeroInfoState extends State<HeroInfo> {
       sliver: SliverList(
         delegate: SliverChildListDelegate([
           _buildStatRow('Attack Type', _heroStats['attackType'] ?? 'N/A'),
-          _buildStatRow('Starting Damage',
-              '${_heroStats['startingDamageMin'] ?? 'N/A'} - ${_heroStats['startingDamageMax'] ?? 'N/A'}'),
-          _buildStatRow('Attack Range', _heroStats['attackRange']?.toString() ?? 'N/A'),
-          _buildStatRow('Base Strength', _heroStats['strengthBase']?.toString() ?? 'N/A'),
-          _buildStatRow('Base Intelligence', _heroStats['intelligenceBase']?.toString() ?? 'N/A'),
-          _buildStatRow('Base Agility', _heroStats['agilityBase']?.toString() ?? 'N/A'),
+          _buildStatRow(
+            'Starting Damage',
+            '${_heroStats['startingDamageMin'] ?? 'N/A'} - ${_heroStats['startingDamageMax'] ?? 'N/A'}',
+          ),
+          _buildStatRow(
+            'Attack Range',
+            _heroStats['attackRange']?.toString() ?? 'N/A',
+          ),
+          _buildStatRow(
+            'Base Strength',
+            _heroStats['strengthBase']?.toString() ?? 'N/A',
+          ),
+          _buildStatRow(
+            'Base Intelligence',
+            _heroStats['intelligenceBase']?.toString() ?? 'N/A',
+          ),
+          _buildStatRow(
+            'Base Agility',
+            _heroStats['agilityBase']?.toString() ?? 'N/A',
+          ),
           _buildStatRow('HP Regen', _heroStats['hpRegen']?.toString() ?? 'N/A'),
           _buildStatRow('MP Regen', _heroStats['mpRegen']?.toString() ?? 'N/A'),
-          _buildStatRow('Move Speed', _heroStats['moveSpeed']?.toString() ?? 'N/A'),
-          _buildStatRow('Complexity', _heroStats['complexity']?.toString() ?? 'N/A'),
+          _buildStatRow(
+            'Move Speed',
+            _heroStats['moveSpeed']?.toString() ?? 'N/A',
+          ),
+          _buildStatRow(
+            'Complexity',
+            _heroStats['complexity']?.toString() ?? 'N/A',
+          ),
         ]),
       ),
     );
@@ -588,25 +641,32 @@ class _HeroInfoState extends State<HeroInfo> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDarkMode ? Colors.white : Colors.black;
-    final secondaryTextColor = isDarkMode ? Colors.grey[400] : Colors.grey[700];
 
     // Filter the matchups based on the search query
-    List<Map<String, dynamic>> filteredMatchups = _matchups.where((matchup) {
-      return matchup['opponent_hero_name'].toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
+    List<Map<String, dynamic>> filteredMatchups =
+        _matchups.where((matchup) {
+          return matchup['opponent_hero_name'].toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          );
+        }).toList();
 
     return Scaffold(
-      backgroundColor: isDarkMode
-          ? const Color.fromARGB(255, 10, 10, 10)
-          : Colors.white,
+      backgroundColor:
+          isDarkMode ? const Color.fromARGB(255, 10, 10, 10) : Colors.white,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            surfaceTintColor: isDarkMode ? const Color.fromARGB(255, 10, 10, 10) : Colors.white,
+            surfaceTintColor:
+                isDarkMode
+                    ? const Color.fromARGB(255, 10, 10, 10)
+                    : Colors.white,
             expandedHeight: 250.0,
             floating: false,
             pinned: true,
-            backgroundColor: isDarkMode ? const Color.fromARGB(255, 10, 10, 10) : Colors.white,
+            backgroundColor:
+                isDarkMode
+                    ? const Color.fromARGB(255, 10, 10, 10)
+                    : Colors.white,
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -625,9 +685,7 @@ class _HeroInfoState extends State<HeroInfo> {
                     ),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        color: Colors.black.withOpacity(0.3),
-                      ),
+                      child: Container(color: Colors.black.withOpacity(0.3)),
                     ),
                   ),
                   // Hero details centered in the flexible space
@@ -685,10 +743,7 @@ class _HeroInfoState extends State<HeroInfo> {
               ),
             ),
             leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back,
-                color: Colors.white,
-              ),
+              icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () {
                 Navigator.pop(context);
               },
@@ -738,10 +793,19 @@ class _HeroInfoState extends State<HeroInfo> {
                           });
                         },
                         decoration: InputDecoration(
-                          prefixIcon: Icon(Icons.search, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                          ),
                           hintText: 'Search Matchups...',
                           hintStyle: TextStyle(
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                             fontFamily: "Inter",
                           ),
                           border: InputBorder.none,
@@ -755,46 +819,57 @@ class _HeroInfoState extends State<HeroInfo> {
                       ),
                     ),
                     SizedBox(height: 10.0),
-                    if (!_isLoading) DropdownButton<String>(
-                      borderRadius: BorderRadius.circular(10),
-                      dropdownColor: isDarkMode ? Colors.grey[900] : Colors.white,
-                      padding: EdgeInsets.only(left: 10, right: 10),
-                      value: _sortOption,
-                      items: <String>[
-                        'Highest Win Rate',
-                        'Lowest Win Rate',
-                        'Alphabetically',
-                      ].map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value, style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontWeight: FontWeight.w600),),
-                        );
-                      }).toList(),
-                      onChanged: (newValue) {
-                        setState(() {
-                          _sortOption = newValue!;
-                          _sortMatchups(_matchups);
-                          filteredMatchups = _matchups.where((matchup) {
-                            return matchup['opponent_hero_name']
-                                .toLowerCase()
-                                .contains(_searchQuery.toLowerCase());
-                          }).toList();
-                        });
-                      },
-                    ),
+                    if (!_isLoading)
+                      DropdownButton<String>(
+                        borderRadius: BorderRadius.circular(10),
+                        dropdownColor:
+                            isDarkMode ? Colors.grey[900] : Colors.white,
+                        padding: EdgeInsets.only(left: 10, right: 10),
+                        value: _sortOption,
+                        items:
+                            <String>[
+                              'Highest Win Rate',
+                              'Lowest Win Rate',
+                              'Alphabetically',
+                            ].map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(
+                                  value,
+                                  style: TextStyle(
+                                    color:
+                                        isDarkMode
+                                            ? Colors.white
+                                            : Colors.black,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                        onChanged: (newValue) {
+                          setState(() {
+                            _sortOption = newValue!;
+                            _sortMatchups(_matchups);
+                            filteredMatchups =
+                                _matchups.where((matchup) {
+                                  return matchup['opponent_hero_name']
+                                      .toLowerCase()
+                                      .contains(_searchQuery.toLowerCase());
+                                }).toList();
+                          });
+                        },
+                      ),
                   ] else if (_currentTabIndex == 1) ...[
                     Text(
-                        'Items',
-                        style: TextStyle(
-                          fontSize: 22.0,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        )
+                      'Items',
+                      style: TextStyle(
+                        fontSize: 22.0,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
                     ),
                     SizedBox(height: 10.0),
-                    HeroItems(
-                      heroId: widget.hero.id,
-                    ),
+                    HeroItems(heroId: widget.hero.id),
                   ] else ...[
                     Text(
                       'Hero Stats',
@@ -815,25 +890,26 @@ class _HeroInfoState extends State<HeroInfo> {
           else if (_currentTabIndex == 0)
             _isLoading
                 ? SliverFillRemaining(
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: isDarkMode ? Colors.grey[200] : Colors.grey[800],
-                ),
-              ),
-            )
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: isDarkMode ? Colors.grey[200] : Colors.grey[800],
+                    ),
+                  ),
+                )
                 : SliverPadding(
-              padding: const EdgeInsets.all(16.0),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                    if (index >= filteredMatchups.length) {
-                      return null;
-                    }
-                    return _buildMatchupItem(filteredMatchups[index], isDarkMode);
-                  },
+                  padding: const EdgeInsets.all(16.0),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      if (index >= filteredMatchups.length) {
+                        return null;
+                      }
+                      return _buildMatchupItem(
+                        filteredMatchups[index],
+                        isDarkMode,
+                      );
+                    }),
+                  ),
                 ),
-              ),
-            ),
         ],
       ),
     );

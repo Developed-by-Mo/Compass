@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+// import 'package:http/http.dart' as http;
+import 'package:compass/utils/http_client.dart';
 import 'dart:convert';
 import 'package:compass/pages/player_details_page.dart';
 
@@ -70,11 +71,9 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
   Future<void> _fetchPlayerProfile() async {
     try {
       if (_steamId != null) {
-        final response = await http.get(
-          Uri.parse('https://api.opendota.com/api/players/${_convertToAccountId(_steamId!)}'),
-        ).timeout(
-          const Duration(seconds: 10),
-          onTimeout: () => throw TimeoutException('Request timed out'),
+        final response = await ApiClient.getOpenDota(
+          'players/${_convertToAccountId(_steamId!)}',
+          timeout: const Duration(seconds: 10),
         );
 
         if (response.statusCode == 200) {
@@ -98,58 +97,63 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
 
   String _convertToAccountId(String steamId) {
     try {
-      return (BigInt.parse(steamId) - BigInt.parse('76561197960265728')).toString();
+      return (BigInt.parse(steamId) - BigInt.parse('76561197960265728'))
+          .toString();
     } catch (e) {
       throw Exception('Invalid Steam ID format');
     }
   }
 
   void _initWebView() {
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (String url) {
-            setState(() => _webViewLoading = true);
-            debugPrint('Page started loading: $url');
-          },
-          onPageFinished: (String url) {
-            setState(() => _webViewLoading = false);
-            debugPrint('Page finished loading: $url');
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            debugPrint('Navigation request to: ${request.url}');
-            if (request.url.contains('openid/id/')) {
-              try {
-                final steamId = _extractSteamIdFromUrl(request.url);
-                _handleSteamLogin(steamId);
-              } catch (e) {
-                _handleError('Failed to extract Steam ID');
-              }
-              return NavigationDecision.prevent;
-            }
-            return NavigationDecision.navigate;
-          },
-          onWebResourceError: (WebResourceError error) {
-            debugPrint('WebView error: ${error.description}');
-            _handleError('WebView error: ${error.description}');
-          },
-        ),
-      );
+    _controller =
+        WebViewController()
+          ..setJavaScriptMode(JavaScriptMode.unrestricted)
+          ..setNavigationDelegate(
+            NavigationDelegate(
+              onPageStarted: (String url) {
+                setState(() => _webViewLoading = true);
+                debugPrint('Page started loading: $url');
+              },
+              onPageFinished: (String url) {
+                setState(() => _webViewLoading = false);
+                debugPrint('Page finished loading: $url');
+              },
+              onNavigationRequest: (NavigationRequest request) {
+                debugPrint('Navigation request to: ${request.url}');
+                if (request.url.contains('openid/id/')) {
+                  try {
+                    final steamId = _extractSteamIdFromUrl(request.url);
+                    _handleSteamLogin(steamId);
+                  } catch (e) {
+                    _handleError('Failed to extract Steam ID');
+                  }
+                  return NavigationDecision.prevent;
+                }
+                return NavigationDecision.navigate;
+              },
+              onWebResourceError: (WebResourceError error) {
+                debugPrint('WebView error: ${error.description}');
+                _handleError('WebView error: ${error.description}');
+              },
+            ),
+          );
 
-    final steamLoginUrl = Uri(
-      scheme: 'https',
-      host: 'steamcommunity.com',
-      path: '/openid/login',
-      queryParameters: {
-        'openid.ns': 'http://specs.openid.net/auth/2.0',
-        'openid.mode': 'checkid_setup',
-        'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
-        'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
-        'openid.return_to': 'https://steamcommunity.com/openid/id/',
-        'openid.realm': 'https://steamcommunity.com',
-      },
-    ).toString();
+    final steamLoginUrl =
+        Uri(
+          scheme: 'https',
+          host: 'steamcommunity.com',
+          path: '/openid/login',
+          queryParameters: {
+            'openid.ns': 'http://specs.openid.net/auth/2.0',
+            'openid.mode': 'checkid_setup',
+            'openid.identity':
+                'http://specs.openid.net/auth/2.0/identifier_select',
+            'openid.claimed_id':
+                'http://specs.openid.net/auth/2.0/identifier_select',
+            'openid.return_to': 'https://steamcommunity.com/openid/id/',
+            'openid.realm': 'https://steamcommunity.com',
+          },
+        ).toString();
 
     _controller!.loadRequest(Uri.parse(steamLoginUrl));
   }
@@ -213,7 +217,8 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: isDarkMode ? const Color.fromRGBO(20, 20, 20, 1) : Colors.white,
+          backgroundColor:
+              isDarkMode ? const Color.fromRGBO(20, 20, 20, 1) : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -283,7 +288,8 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
 
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: isDarkMode ? const Color.fromRGBO(10, 10, 10, 1) : Colors.white,
+        backgroundColor:
+            isDarkMode ? const Color.fromRGBO(10, 10, 10, 1) : Colors.white,
         body: Center(
           child: CircularProgressIndicator(
             color: isDarkMode ? Colors.white : Colors.black,
@@ -293,7 +299,8 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
     }
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color.fromRGBO(10, 10, 10, 1) : Colors.white,
+      backgroundColor:
+          isDarkMode ? const Color.fromRGBO(10, 10, 10, 1) : Colors.white,
       body: Stack(
         children: [
           if (_showWebView && _controller != null)
@@ -307,9 +314,7 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
                       if (_webViewLoading)
                         Container(
                           color: Colors.black.withOpacity(0.1),
-                          child: const Center(
-
-                          ),
+                          child: const Center(),
                         ),
                     ],
                   ),
@@ -376,7 +381,7 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
               'lib/icons/steam-brands-solid.svg',
               width: 80,
               height: 80,
-              color: isDarkMode ? Colors.white : Colors.black,
+              color: isDarkMode ? Colors.grey[700] : Colors.grey[400],
             ),
             const SizedBox(height: 24),
             Text(
@@ -385,7 +390,7 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
                 fontFamily: 'Inter',
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white : Colors.black,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
               ),
             ),
             const SizedBox(height: 16),
@@ -402,8 +407,12 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
             ElevatedButton(
               onPressed: _loginWithSteam,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                backgroundColor:
+                    isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -435,75 +444,5 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
     );
   }
 
-  Widget _buildProfilePage(bool isDarkMode) {
-    if (_playerProfile == null) {
-      return Center(
-        child: CircularProgressIndicator(
-          color: isDarkMode ? Colors.white : Colors.black,
-        ),
-      );
-    }
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundImage: NetworkImage(_playerProfile!['avatarfull']),
-            backgroundColor: Colors.grey[300],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _playerProfile!['personaname'],
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: isDarkMode ? Colors.white : Colors.black,
-            ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () {
-              final accountId = _convertToAccountId(_steamId!);
-              Navigator.push( // Changed from pushReplacement to push
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PlayerDetailsPage(
-                    accountId: accountId,
-                    playerName: _playerProfile!['personaname'],
-                    avatarUrl: _playerProfile!['avatarfull'],
-                    showAppBar: true, // Add AppBar for this navigation path
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            ),
-            child: Text(
-              'View Statistics',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                color: isDarkMode ? Colors.white : Colors.black,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: _logout,
-            child: Text(
-              'Logout',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // _buildProfilePage not used
 }

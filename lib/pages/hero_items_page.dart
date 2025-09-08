@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:graphql/client.dart';
 
 import '../utils/config.dart';
+import '../services/items_service.dart';
+import 'item_detail_page.dart';
 
 class HeroItems extends StatefulWidget {
   final int heroId;
@@ -18,24 +20,22 @@ class _HeroItemsState extends State<HeroItems> {
   bool _isLoading = true;
   String _sortOption = 'Most Purchased';
   String _searchQuery = '';
+  final ItemsService _itemsService = ItemsService();
 
   late GraphQLClient _client;
 
   final HttpLink httpLink = HttpLink(
     'https://api.stratz.com/graphql',
     defaultHeaders: {
-      'Authorization': Config.stratzApiKey,
-      'User-Agent': 'STRATZ_API'
+      'Authorization': 'Bearer ${Config.stratzApiKey}',
+      'User-Agent': 'STRATZ_API',
     },
   );
 
   @override
   void initState() {
     super.initState();
-    _client = GraphQLClient(
-      link: httpLink,
-      cache: GraphQLCache(),
-    );
+    _client = GraphQLClient(link: httpLink, cache: GraphQLCache());
     _fetchItemData();
   }
 
@@ -67,9 +67,7 @@ class _HeroItemsState extends State<HeroItems> {
         }
       }
     '''),
-        variables: {
-          'heroId': widget.heroId,
-        },
+        variables: {'heroId': widget.heroId},
       );
 
       final itemsOptions = QueryOptions(
@@ -96,15 +94,16 @@ class _HeroItemsState extends State<HeroItems> {
       final itemsResult = results[1];
 
       // Extract raw data
-      final fullPurchases = purchaseResult.data!['heroStats']['itemFullPurchase'] as List;
-      final bootPurchases = purchaseResult.data!['heroStats']['itemBootPurchase'] as List;
-      final neutralPurchases = purchaseResult.data!['heroStats']['itemNeutral'] as List;
+      final fullPurchases =
+          purchaseResult.data!['heroStats']['itemFullPurchase'] as List;
+      final bootPurchases =
+          purchaseResult.data!['heroStats']['itemBootPurchase'] as List;
+      final neutralPurchases =
+          purchaseResult.data!['heroStats']['itemNeutral'] as List;
       final itemDetails = itemsResult.data!['constants']['items'] as List;
 
       // Create a map of itemId to item details
-      final itemDetailsMap = {
-        for (var item in itemDetails) item['id']: item,
-      };
+      final itemDetailsMap = {for (var item in itemDetails) item['id']: item};
 
       // Aggregate all purchases
       final aggregatedPurchases = <int, Map<String, dynamic>>{};
@@ -118,8 +117,10 @@ class _HeroItemsState extends State<HeroItems> {
               'winCount': purchase['winCount'] as int,
             };
           } else {
-            aggregatedPurchases[itemId]!['matchCount'] += purchase['matchCount'] as int;
-            aggregatedPurchases[itemId]!['winCount'] += purchase['winCount'] as int;
+            aggregatedPurchases[itemId]!['matchCount'] +=
+                purchase['matchCount'] as int;
+            aggregatedPurchases[itemId]!['winCount'] +=
+                purchase['winCount'] as int;
           }
         }
       }
@@ -130,25 +131,31 @@ class _HeroItemsState extends State<HeroItems> {
       processPurchases(neutralPurchases);
 
       // Convert aggregated data into the final format
-      final processedItems = aggregatedPurchases.entries.map((entry) {
-        final itemId = entry.key;
-        final stats = entry.value;
-        final itemDetail = itemDetailsMap[itemId];
+      final processedItems =
+          aggregatedPurchases.entries
+              .map((entry) {
+                final itemId = entry.key;
+                final stats = entry.value;
+                final itemDetail = itemDetailsMap[itemId];
 
-        if (itemDetail == null || itemDetail['image'] == null) return null;
+                if (itemDetail == null || itemDetail['image'] == null)
+                  return null;
 
-        final matchCount = stats['matchCount'] as int;
-        final winCount = stats['winCount'] as int;
+                final matchCount = stats['matchCount'] as int;
+                final winCount = stats['winCount'] as int;
 
-        return {
-          'id': itemId,
-          'name': itemDetail['displayName'] ?? 'Unknown Item',
-          'image': 'https://cdn.stratz.com/images/dota2/items/${itemDetail['image'].split('?').first.replaceAll('_lg', '')}',
-          'matchCount': matchCount,
-          'winCount': winCount,
-          'winRate': (winCount / matchCount * 100).toStringAsFixed(2),
-        };
-      }).whereType<Map<String, dynamic>>().toList();
+                return {
+                  'id': itemId,
+                  'name': itemDetail['displayName'] ?? 'Unknown Item',
+                  'image':
+                      'https://cdn.stratz.com/images/dota2/items/${itemDetail['image'].split('?').first.replaceAll('_lg', '')}',
+                  'matchCount': matchCount,
+                  'winCount': winCount,
+                  'winRate': (winCount / matchCount * 100).toStringAsFixed(2),
+                };
+              })
+              .whereType<Map<String, dynamic>>()
+              .toList();
 
       // Sort by match count initially
       processedItems.sort((a, b) => b['matchCount'].compareTo(a['matchCount']));
@@ -168,14 +175,18 @@ class _HeroItemsState extends State<HeroItems> {
     }
   }
 
-
   List<Map<String, dynamic>> _getDisplayItems() {
     // Filter items based on search query
-    var filteredItems = _searchQuery.isEmpty
-        ? _items
-        : _items.where((item) =>
-        item['name'].toLowerCase().contains(_searchQuery.toLowerCase())
-    ).toList();
+    var filteredItems =
+        _searchQuery.isEmpty
+            ? _items
+            : _items
+                .where(
+                  (item) => item['name'].toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ),
+                )
+                .toList();
 
     // Create a copy to avoid modifying the original list
     var sortedItems = List<Map<String, dynamic>>.from(filteredItems);
@@ -183,18 +194,22 @@ class _HeroItemsState extends State<HeroItems> {
     // Apply sorting
     switch (_sortOption) {
       case 'Most Purchased':
-        sortedItems.sort((a, b) =>
-            int.parse(b['matchCount'].toString()).compareTo(int.parse(a['matchCount'].toString()))
+        sortedItems.sort(
+          (a, b) => int.parse(
+            b['matchCount'].toString(),
+          ).compareTo(int.parse(a['matchCount'].toString())),
         );
         break;
       case 'Highest Win Rate':
-        sortedItems.sort((a, b) =>
-            double.parse(b['winRate']).compareTo(double.parse(a['winRate']))
+        sortedItems.sort(
+          (a, b) =>
+              double.parse(b['winRate']).compareTo(double.parse(a['winRate'])),
         );
         break;
       case 'Lowest Win Rate':
-        sortedItems.sort((a, b) =>
-            double.parse(a['winRate']).compareTo(double.parse(b['winRate']))
+        sortedItems.sort(
+          (a, b) =>
+              double.parse(a['winRate']).compareTo(double.parse(b['winRate'])),
         );
         break;
     }
@@ -202,19 +217,62 @@ class _HeroItemsState extends State<HeroItems> {
     return sortedItems;
   }
 
-  void _sortItems(List<Map<String, dynamic>> items) {
-    switch (_sortOption) {
-      case 'Most Purchased':
-        items.sort((a, b) => int.parse(b['matchCount'].toString()).compareTo(int.parse(a['matchCount'].toString())));
-        break;
-      case 'Highest Win Rate':
-        items.sort((a, b) => double.parse(b['winRate']).compareTo(double.parse(a['winRate'])));
-        break;
-      case 'Lowest Win Rate':
-        items.sort((a, b) => double.parse(a['winRate']).compareTo(double.parse(b['winRate'])));
-        break;
+  Future<void> _navigateToItemDetail(Map<String, dynamic> heroItem) async {
+    try {
+      // Try to get full item details from the items service
+      final itemId = heroItem['id'];
+      final fullItemData = _itemsService.getItemById(itemId);
+
+      if (fullItemData != null) {
+        // Use cached data if available
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ItemDetailPage(item: fullItemData),
+          ),
+        );
+      } else {
+        // Load items data if not cached, then try again
+        await _itemsService.getItems();
+        final updatedItemData = _itemsService.getItemById(itemId);
+
+        if (updatedItemData != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ItemDetailPage(item: updatedItemData),
+            ),
+          );
+        } else {
+          // Fallback: create basic item data from hero item data
+          final basicItemData = {
+            'id': heroItem['id'],
+            'displayName': heroItem['name'],
+            'image': heroItem['image'],
+            'cost': 0, // We don't have cost data in hero items
+            'isNeutral': false,
+            'description': '',
+            'lore': '',
+            'notes': '',
+          };
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ItemDetailPage(item: basicItemData),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading item details')));
     }
   }
+
+  // Sorting handled inline in _getDisplayItems
 
   @override
   Widget build(BuildContext context) {
@@ -224,6 +282,7 @@ class _HeroItemsState extends State<HeroItems> {
 
     // Get display items (filtered and sorted)
     final displayItems = _getDisplayItems();
+    _filteredItems = displayItems;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,7 +300,10 @@ class _HeroItemsState extends State<HeroItems> {
               });
             },
             decoration: InputDecoration(
-              prefixIcon: Icon(Icons.search, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+              prefixIcon: Icon(
+                Icons.search,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              ),
               hintText: 'Search Items...',
               hintStyle: TextStyle(
                 color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
@@ -263,25 +325,30 @@ class _HeroItemsState extends State<HeroItems> {
           dropdownColor: isDarkMode ? Colors.grey[900] : Colors.white,
           padding: EdgeInsets.only(left: 10, right: 10),
           value: _sortOption,
-          items: <String>[
-            'Most Purchased',
-            'Highest Win Rate',
-            'Lowest Win Rate',
-          ].map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(
-                value,
-                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontWeight: FontWeight.w600), // Text color
-              ),
-            );
-          }).toList(),
+          items:
+              <String>[
+                'Most Purchased',
+                'Highest Win Rate',
+                'Lowest Win Rate',
+              ].map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.w600,
+                    ), // Text color
+                  ),
+                );
+              }).toList(),
           onChanged: (newValue) {
             setState(() {
               _sortOption = newValue!;
             });
           },
-          iconEnabledColor: isDarkMode ? Colors.white : Colors.black, // Dropdown arrow color
+          iconEnabledColor:
+              isDarkMode ? Colors.white : Colors.black, // Dropdown arrow color
           style: TextStyle(
             color: Colors.white, // Text color for the selected item
             fontSize: 16,
@@ -291,76 +358,79 @@ class _HeroItemsState extends State<HeroItems> {
         SizedBox(height: 10),
         _isLoading
             ? Center(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 140.0),
-            child: CircularProgressIndicator(
-              color: isDarkMode ? Colors.grey[200] : Colors.black,
-            ),
-          ),
-        )
-            : ListView.builder(
-          padding: EdgeInsets.zero,
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemCount: displayItems.length,
-          itemBuilder: (context, index) {
-            var item = displayItems[index];
-            return Container(
-              margin: EdgeInsets.only(bottom: 16.0),
-              padding: EdgeInsets.all(10.0),
-              decoration: BoxDecoration(
-                color: isDarkMode ? Colors.grey[900] : Colors.grey[300],
-                borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 140.0),
+                child: CircularProgressIndicator(
+                  color: isDarkMode ? Colors.grey[200] : Colors.black,
+                ),
               ),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8.0),
-                    child: Image.network(
-                      item['image'],
-                      width: 70.0,
-                      height: 70.0,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Icon(Icons.error, size: 50);
-                      },
+            )
+            : ListView.builder(
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: _filteredItems.length,
+              itemBuilder: (context, index) {
+                var item = _filteredItems[index];
+                return GestureDetector(
+                  onTap: () => _navigateToItemDetail(item),
+                  child: Container(
+                    margin: EdgeInsets.only(bottom: 16.0),
+                    padding: EdgeInsets.all(10.0),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? Colors.grey[900] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  SizedBox(width: 16.0),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          item['name'],
-                          style: TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.w600,
-                            color: textColor,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: Image.network(
+                            item['image'],
+                            width: 70.0,
+                            height: 70.0,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(Icons.error, size: 50);
+                            },
                           ),
                         ),
-                        Text(
-                          'Matches: ${item['matchCount']}',
-                          style: TextStyle(
-                            fontSize: 14.0,
-                            color: secondaryTextColor,
-                          ),
-                        ),
-                        Text(
-                          'Win Rate: ${item['winRate']}%',
-                          style: TextStyle(
-                            fontSize: 14.0,
-                            color: secondaryTextColor,
+                        SizedBox(width: 16.0),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item['name'],
+                                style: TextStyle(
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor,
+                                ),
+                              ),
+                              Text(
+                                'Matches: ${item['matchCount']}',
+                                style: TextStyle(
+                                  fontSize: 14.0,
+                                  color: secondaryTextColor,
+                                ),
+                              ),
+                              Text(
+                                'Win Rate: ${item['winRate']}%',
+                                style: TextStyle(
+                                  fontSize: 14.0,
+                                  color: secondaryTextColor,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            );
-          },
-        ),
+                );
+              },
+            ),
       ],
     );
   }

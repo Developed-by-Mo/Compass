@@ -1,7 +1,7 @@
 // player_details_page.dart
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+// import 'package:http/http.dart' as http;
+// import 'dart:convert';
 import 'dart:ui';
 
 import '../dota_hero.dart';
@@ -36,48 +36,49 @@ class CustomToggle extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
-        children: List.generate(
-          items.length,
-              (index) {
-            bool isSelected = selectedIndex == index;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => onToggle(index),
-                child: AnimatedContainer(
-                  duration: Duration(milliseconds: 200),
-                  margin: EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? (isDarkMode ? Colors.grey[800] : Colors.grey[600])
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: isSelected
-                        ? [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                        : null,
-                  ),
-                  child: Center(
-                    child: Text(
-                      items[index],
-                      style: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : (isDarkMode ? Colors.white70 : Colors.black87),
-                        fontFamily: "Inter",
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      ),
+        children: List.generate(items.length, (index) {
+          bool isSelected = selectedIndex == index;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onToggle(index),
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 200),
+                margin: EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? (isDarkMode ? Colors.grey[800] : Colors.grey[600])
+                          : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow:
+                      isSelected
+                          ? [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                          : null,
+                ),
+                child: Center(
+                  child: Text(
+                    items[index],
+                    style: TextStyle(
+                      color:
+                          isSelected
+                              ? Colors.white
+                              : (isDarkMode ? Colors.white70 : Colors.black87),
+                      fontFamily: "Inter",
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -113,6 +114,9 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
   bool _isLoading = true;
   String _errorMessage = '';
   Map<int, String> itemImages = {};
+  // Flags track completion to avoid infinite spinners
+  bool _heroStatsLoaded = false;
+  bool _recentMatchesLoaded = false;
 
   @override
   void initState() {
@@ -126,10 +130,43 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
       itemImages = await PlayerService.fetchItemImages();
 
       await _fetchHeroes();
+
+      // Fire both in parallel with timeouts so UI doesn't spin forever
       await Future.wait([
-        _fetchHeroStats(),
-        _fetchRecentMatches()
+        _fetchHeroStats().timeout(
+          const Duration(seconds: 15),
+          onTimeout: () {
+            setState(() {
+              _errorMessage =
+                  _errorMessage.isEmpty
+                      ? 'Hero stats request timed out'
+                      : _errorMessage;
+              _heroStatsLoaded = true; // consider as attempted
+            });
+            return;
+          },
+        ),
+        _fetchRecentMatches().timeout(
+          const Duration(seconds: 15),
+          onTimeout: () {
+            setState(() {
+              _errorMessage =
+                  _errorMessage.isEmpty
+                      ? 'Recent matches request timed out'
+                      : _errorMessage;
+              _recentMatchesLoaded = true; // consider as attempted
+            });
+            return;
+          },
+        ),
       ]);
+
+      // Ensure loading indicator is cleared after attempts
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       setState(() {
         _errorMessage = 'An error occurred while initializing data';
@@ -151,12 +188,14 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
       final data = await PlayerService.fetchHeroStats(widget.accountId);
       setState(() {
         _heroStats = data;
-        _isLoading = _recentMatches.isEmpty;
+        _heroStatsLoaded = true;
+        // Stop loading as soon as we have some data from either source
+        _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to fetch hero stats';
-        _isLoading = false;
+        _heroStatsLoaded = true;
       });
     }
   }
@@ -166,12 +205,13 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
       final data = await PlayerService.fetchRecentMatches(widget.accountId);
       setState(() {
         _recentMatches = data;
-        _isLoading = _heroStats.isEmpty;
+        _recentMatchesLoaded = true;
+        _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to fetch recent matches';
-        _isLoading = false;
+        _recentMatchesLoaded = true;
       });
     }
   }
@@ -181,9 +221,8 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
     final isDarkMode = ThemeUtils.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: isDarkMode
-          ? const Color.fromARGB(255, 10, 10, 10)
-          : Colors.white,
+      backgroundColor:
+          isDarkMode ? const Color.fromARGB(255, 10, 10, 10) : Colors.white,
       body: CustomScrollView(
         slivers: [
           PlayerAppBar(
@@ -206,7 +245,7 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
               ),
             ),
           ),
-          if (_isLoading)
+          if (_isLoading && !_heroStatsLoaded && !_recentMatchesLoaded)
             SliverFillRemaining(
               child: Center(
                 child: CircularProgressIndicator(
@@ -223,11 +262,7 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red[300],
-                    ),
+                    Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
                     const SizedBox(height: 16),
                     Text(
                       _errorMessage,
@@ -246,7 +281,7 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                 builder: (_) {
                   switch (_currentTabIndex) {
                     case 0:
-                      print("Account ID: " +  widget.accountId);
+                      print("Account ID: " + widget.accountId);
                       return StatsTab(
                         accountId: widget.accountId,
                         isDarkMode: isDarkMode,
@@ -268,7 +303,9 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                       return Center(
                         child: Text(
                           "Invalid Tab",
-                          style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white : Colors.black,
+                          ),
                         ),
                       );
                   }
